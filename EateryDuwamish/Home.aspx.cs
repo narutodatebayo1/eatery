@@ -1,33 +1,35 @@
-﻿using Common.Data;
+﻿using BusinessFacade;
+using Common.Data;
+using Common.Enum;
 using System;
-using BusinessFacade;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
-using System.EnterpriseServices.CompensatingResourceManager;
-using System.Data.SqlClient;
-using System.Drawing;
 
 namespace EateryDuwamish
 {
     public partial class Home : System.Web.UI.Page
     {
-        private static int selectedId = -1;
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
-                List<string> DishTypeNameList = new DishTypeSystem().GetDishTypeList().Select(x => x.DishTypeName).ToList(); ;
-                DishTypeDropDownList.DataSource = DishTypeNameList;
-                DishTypeDropDownList.DataBind();
-
-                BindGrid();
+                DishTypeBind();
+                BindGridView();
             }
         }
 
-        protected void BindGrid()
+        protected void DishTypeBind()
+        {
+            List<DishTypeData> dishDataList = new DishTypeSystem().GetDishTypeList();
+            DishTypeDropDownList.DataSource = dishDataList.Select(x => x.DishTypeName);
+            DishTypeDropDownList.DataBind();
+            DishTypeDropDownList.Items.Insert(0, "Select Type");
+        }
+
+        protected void BindGridView()
         {
             List<DishData> DishList = new DishSystem().GetDishList();
             GridView.DataSource = DishList;
@@ -39,66 +41,31 @@ namespace EateryDuwamish
                 DishTypeData DishType = new DishTypeSystem().GetDishTypeByID(id);
                 GridView.Rows[i].Cells[3].Text = DishType.DishTypeName;
             }
+
+            CreateHeader();
         }
 
-        #region FORM EVENT
-        protected void AddButton_Click(object sender, EventArgs e)
+        protected void CreateHeader()
         {
-            postAddDiv.Visible = true;
-        }
-        
-
-        
-        protected void DeleteButton_Click(object sender, EventArgs e)
-        {
-            List<DishData> dishList = new DishSystem().GetDishList();
-            List<int> list = new List<int>();
-
-            for (int i=0; i<GridView.Rows.Count; i++)
-            {
-                var checkBox = GridView.Rows[i].FindControl("CheckBox") as CheckBox;
-                if (checkBox.Checked)
-                {
-                    list.Add(dishList[i].DishID);
-                }
-            }
-            new DishSystem().DeleteDishes(list);
-
-            BindGrid();
+            GridView.UseAccessibleHeader = true;
+            GridView.HeaderRow.TableSection = TableRowSection.TableHeader;
         }
 
+        #region CLICK EVENT
         protected void SubmitButton_Click(object sender, EventArgs e)
         {
-            Label1.Text = selectedId.ToString();
-
-            string name = DishNameTextBox.Text;
-            int typeID = DishTypeDropDownList.SelectedIndex + 1;
-            int price = Int32.Parse(DishPriceTextBox.Text);
-
-            // kalo belom ada data di tabel Dish
-            if (new DishSystem().GetDishList().LastOrDefault() == null)
+            try
             {
-                DishSystem ds = new DishSystem();
+                string name = DishNameTextBox.Text;
+                int typeID = DishTypeDropDownList.SelectedIndex;
+                int price = Int32.Parse(DishPriceTextBox.Text);
 
-                ds.InsertUpdateDish(new DishData()
+                // kalo belom ada data di tabel Dish
+                if (new DishSystem().GetDishList().LastOrDefault() == null)
                 {
-                    DishID = 0,
-                    DishTypeID = typeID,
-                    DishName = name,
-                    DishPrice = price
-                });
+                    DishSystem ds = new DishSystem();
 
-                Label1.Text = "p";
-            }
-            else
-            {
-                
-                if (DishIDTextBox.Text == "")
-                {
-                    // find biggest id
-                    int id = new DishSystem().GetDishList().LastOrDefault().DishID;
-
-                    new DishSystem().InsertUpdateDish(new DishData()
+                    ds.InsertUpdateDish(new DishData()
                     {
                         DishID = 0,
                         DishTypeID = typeID,
@@ -108,42 +75,107 @@ namespace EateryDuwamish
                 }
                 else
                 {
-                    new DishSystem().InsertUpdateDish(new DishData()
+
+                    if (DishIDTextBox.Text == "")
                     {
-                        DishID = Int32.Parse(DishIDTextBox.Text),
-                        DishTypeID = typeID,
-                        DishName = name,
-                        DishPrice = price
-                    });
+                        // find biggest id
+                        int id = new DishSystem().GetDishList().LastOrDefault().DishID;
+
+                        new DishSystem().InsertUpdateDish(new DishData()
+                        {
+                            DishID = 0,
+                            DishTypeID = typeID,
+                            DishName = name,
+                            DishPrice = price
+                        });
+                    }
+                    else
+                    {
+                        new DishSystem().InsertUpdateDish(new DishData()
+                        {
+                            DishID = Int32.Parse(DishIDTextBox.Text),
+                            DishTypeID = typeID,
+                            DishName = name,
+                            DishPrice = price
+                        });
+                    }
+
+
                 }
 
+                BindGridView();
 
+                // ngosongin form biar kaya ke reload
+                DishFormPanel.Visible = false;
+                DishIDTextBox.Text = "";
+                DishNameTextBox.Text = "";
+                DishPriceTextBox.Text = "";
+                DishTypeDropDownList.SelectedIndex = 0;
+
+                notifDish.Show("Data sukses disimpan", NotificationType.Success);
             }
-
-            BindGrid();
-
-            // ngosongin form biar kaya ke reload
-            postAddDiv.Visible = false;
-            DishNameTextBox.Text = "";
-            DishPriceTextBox.Text = "";
-            DishTypeDropDownList.SelectedIndex = 0;
+            catch (Exception ex)
+            {
+                notifDish.Show($"ERROR SUBMIT DATA: {ex.Message}", NotificationType.Danger);
+            }
         }
-        #endregion
 
+        protected void AddButton_Click(object sender, EventArgs e)
+        {
 
+            DishFormPanel.Visible = true;
+            DishNameTextBox.Focus();
+
+            CreateHeader();
+        }
+
+        protected void DeleteButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                List<DishData> dishList = new DishSystem().GetDishList();
+                List<int> list = new List<int>();
+
+                for (int i = 0; i < GridView.Rows.Count; i++)
+                {
+                    var checkBox = GridView.Rows[i].FindControl("CheckBox") as CheckBox;
+                    if (checkBox.Checked)
+                    {
+                        list.Add(dishList[i].DishID);
+                    }
+                }
+
+                if(list.Count == 0)
+                {
+                    notifDish.Show("NO DATA SELECTED", NotificationType.Danger);
+                    CreateHeader();
+                    return;
+                }
+
+                new DishSystem().DeleteDishes(list);
+
+                BindGridView();
+
+                notifDish.Show("Data sukses dihapus", NotificationType.Success);
+            }
+            catch (Exception ex)
+            {
+                notifDish.Show($"ERROR DELETE DATA: {ex.Message}", NotificationType.Danger);
+            }
+        }
 
         protected void RecipesButton_Click(object sender, EventArgs e)
         {
             Button btn = (Button)sender;
             GridViewRow row = (GridViewRow)btn.NamingContainer;
 
-            Response.Redirect("~/Recipes.aspx?dish_id=" + GridView.DataKeys[row.RowIndex]["DishID"].ToString() + "&recipe_id=-1");
-
+            string dish_id = GridView.DataKeys[row.RowIndex]["DishID"].ToString();
+            Response.Redirect($"~/Recipe.aspx?dish_id={dish_id}");
         }
 
         protected void EditButton_Click(object sender, EventArgs e)
         {
-            postAddDiv.Visible = true;
+            DishFormPanel.Visible = true;
 
             Button btn = (Button)sender;
             GridViewRow row = (GridViewRow)btn.NamingContainer;
@@ -153,12 +185,13 @@ namespace EateryDuwamish
 
             string dishTypeName = row.Cells[3].Text;
             DishTypeData dt = new DishTypeSystem().GetDishTypeByName(dishTypeName);
-            DishTypeDropDownList.SelectedIndex = dt.DishTypeID - 1;
+            DishTypeDropDownList.SelectedIndex = dt.DishTypeID;
 
             DishPriceTextBox.Text = row.Cells[4].Text;
 
-        }
 
-        
+            CreateHeader();
+        }
+        #endregion
     }
 }

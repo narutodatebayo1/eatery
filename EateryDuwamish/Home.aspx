@@ -1,44 +1,68 @@
-﻿
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Home.aspx.cs" Inherits="EateryDuwamish.Home" %>
+<%@ Register Src="~/UserControl/NotificationControl.ascx" TagName="NotificationControl" TagPrefix="uc1" %>
+<asp:Content ID="Content1" ContentPlaceHolderID="Head" runat="server">
 
-<%@ Page Title="" Language="C#" MasterPageFile="~/Site2.Master" AutoEventWireup="true" CodeBehind="Home.aspx.cs" Inherits="EateryDuwamish.Home" %>
-<asp:Content ID="Content3" ContentPlaceHolderID="head" runat="server">
+    <script type="text/javascript">
+        $(function () {
+            var table = null;
+            if ($.fn.dataTable.isDataTable('#<%= GridView.ClientID %>')) {
+               
+                table = $('#<%= GridView.ClientID %>').DataTable();
+            }
+            else {
+                table = $('#<%= GridView.ClientID %>').DataTable({
+                    stateSave: false,
+                    order: [[1, "asc"]],
+                    columnDefs: [{ orderable: false, targets: [0] }]
+                });
+            }
+            return table;
+        })
+    </script>
+
 </asp:Content>
-<asp:Content ID="Content4" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
-        <p>
-        DISHES
-    </p>
-    <p>
-        View, manage, and choose your disired dish here.
-    </p>
+<asp:Content ID="Content2" ContentPlaceHolderID="MainContent" runat="server">
 
-    <div class="post-add-div" id="postAddDiv" runat="server" visible="false">
-        Form Dish
+    <uc1:NotificationControl ID="notifDish" runat="server" />
+
+    <div class="header">
         <div>
-            <div>
-                <asp:TextBox ID="DishIDTextBox" runat="server" Visible="false"></asp:TextBox>
-            </div>
-            <div>
-                <p>Dish Name</p>
-                <asp:TextBox ID="DishNameTextBox" runat="server"></asp:TextBox>
-            </div>
-            <div>
-                <p>Dish Type</p>
-                <asp:DropDownList ID="DishTypeDropDownList" runat="server"></asp:DropDownList>
-            </div>
-            <div>
-                <p>Dish Price</p>
-                <asp:TextBox ID="DishPriceTextBox" runat="server"></asp:TextBox>
-            </div>
-            <asp:Button CssClass="button blue-background" ID="SubmitButton" runat="server" Text="Submit" OnClick="SubmitButton_Click" />
+            <h2 class="title">Dish Page</h2>
+        </div>
+        <div class="add-delete-button-div">
+            <asp:Button CssClass="btn btn-primary" Width="100" ID="AddButton" runat="server" Text="ADD" OnClick="AddButton_Click" />
+            <asp:Button CssClass="btn btn-danger" Width="100" ID="DeleteButton" runat="server" Text="DELETE" OnClick="DeleteButton_Click" />
         </div>
     </div>
-    <asp:Button CssClass="button blue-background" ID="AddButton" runat="server" Text="ADD" OnClick="AddButton_Click" />
-    <asp:Button CssClass="button red-background" ID="DeleteButton" runat="server" Text="DELETE" OnClick="DeleteButton_Click" />
 
-    <asp:Label ID="Label1" runat="server" Text="Label"></asp:Label>
+    <asp:Panel CssClass="post-add-div" ID="DishFormPanel" runat="server" Visible="false">
+        <div>
+            <asp:TextBox ID="DishIDTextBox" runat="server" Visible="false"></asp:TextBox>
+        </div>
+        <div>
+            <h5>Dish Name</h5>
+            <asp:TextBox ID="DishNameTextBox" runat="server" CssClass="form-control"></asp:TextBox>
+            <asp:RequiredFieldValidator ID="RequiredFieldValidator2" ValidationGroup="SubmitValidationGroup" runat="server" ControlToValidate="DishNameTextBox" ForeColor="Red" ErrorMessage="Please fill this field"></asp:RequiredFieldValidator>
+        </div>
+        <div>
+            <h5>Dish Type</h5>
+            <asp:DropDownList ID="DishTypeDropDownList" runat="server" CssClass="form-control"></asp:DropDownList>
+            <asp:RequiredFieldValidator ID="RequiredFieldValidator3" ValidationGroup="SubmitValidationGroup" runat="server" InitialValue="Select Type" ControlToValidate="DishTypeDropDownList" ForeColor="Red" ErrorMessage="Please fill this field"></asp:RequiredFieldValidator>
+        </div>
+        <div>
+            <h5>Dish Price</h5>
+            <asp:TextBox ID="DishPriceTextBox" TextMode="Number" runat="server" CssClass="form-control"></asp:TextBox>
+            <asp:RequiredFieldValidator ID="RequiredFieldValidator1" ValidationGroup="SubmitValidationGroup" runat="server" ControlToValidate="DishPriceTextBox" ForeColor="Red" ErrorMessage="Please fill this field"></asp:RequiredFieldValidator>
+        </div>
 
+        <br />
 
-    <asp:GridView ID="GridView" runat="server" AutoGenerateColumns="false" DataKeyNames="DishID">
+        <asp:Button CssClass="btn btn-primary" Width="100" ID="SubmitButton" ValidationGroup="SubmitValidationGroup" runat="server" Text="Submit" OnClick="SubmitButton_Click" />
+    </asp:Panel>
+
+    <br/>
+
+    <asp:GridView CssClass="table table-borderless" ID="GridView" runat="server" AutoGenerateColumns="false" DataKeyNames="DishID" ShowHeaderWhenEmpty="true">
         <Columns>
             <asp:TemplateField>
                 <ItemTemplate>
@@ -50,14 +74,15 @@
             <asp:BoundField DataField="DishTypeID" HeaderText="Dish Type" />
             <asp:BoundField DataField="DishPrice" HeaderText="Dish Price" />
             <asp:TemplateField>
-                <ItemTemplate>
-                    <asp:Button ID="RecipesButton" runat="server" Text="Recipes" OnClick="RecipesButton_Click" />
-                    <asp:Button ID="EditButton" runat="server" Text="Edit" OnClick="EditButton_Click" />
-                </ItemTemplate>
                 <HeaderTemplate>
                     Toggle
                 </HeaderTemplate>
+                <ItemTemplate>
+                    <asp:Button CssClass="btn btn-primary" Width="100" ID="RecipesButton" runat="server" Text="Recipes" OnClick="RecipesButton_Click" />
+                    <asp:Button CssClass="btn btn-primary" Width="100" ID="EditButton" runat="server" Text="Edit" OnClick="EditButton_Click" />
+                </ItemTemplate>
             </asp:TemplateField>
         </Columns>
     </asp:GridView>
+
 </asp:Content>

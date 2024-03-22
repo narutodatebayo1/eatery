@@ -1,5 +1,6 @@
 ﻿using BusinessFacade;
 using Common.Data;
+using Common.Enum;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,9 +16,7 @@ namespace EateryDuwamish
         {
             if (!IsPostBack)
             {
-                
                 DescriptionTextBox.Text = new RecipeSystem().GetRecipeByID(RecipeIdInInt()).RecipeDescription;
-
                 BindGridView();
 
             }
@@ -34,88 +33,14 @@ namespace EateryDuwamish
             List<IngredientData> ingredientData = new IngredientSystem().GetIngredientByRecipeID(recipeID);
             IngredientGridView.DataSource = ingredientData;
             IngredientGridView.DataBind();
+
+            CreateHeader();
         }
 
-        protected void EditButton_Click(object sender, EventArgs e)
+        protected void CreateHeader()
         {
-            postAddDiv.Visible = true;
-            Button btn = (Button)sender;
-            GridViewRow row = (GridViewRow)btn.NamingContainer;
-
-            IngredientIDTextBox.Text = IngredientGridView.DataKeys[row.RowIndex]["IngredientID"].ToString();
-            IngredientNameTextBox.Text = row.Cells[2].Text;
-            IngredientQuantityTextBox.Text = row.Cells[3].Text;
-            IngredientUnitTextBox.Text = row.Cells[4].Text;
-        }
-
-        protected void AddButton_Click(object sender, EventArgs e)
-        {
-            postAddDiv.Visible = true;
-        }
-
-        protected void DeleteButton_Click(object sender, EventArgs e)
-        {
-            List<int> list = new List<int>();
-
-            for (int i = 0; i < IngredientGridView.Rows.Count; i++)
-            {
-                var checkBox = IngredientGridView.Rows[i].FindControl("CheckBox") as CheckBox;
-                if (checkBox.Checked)
-                {
-                    list.Add(Int32.Parse(IngredientGridView.DataKeys[i]["IngredientID"].ToString()));
-                }
-            }
-            new IngredientSystem().DeleteIngredients(list);
-
-            BindGridView();
-
-
-        }
-
-        protected void SubmitButton_Click(object sender, EventArgs e)
-        {
-            string name = IngredientNameTextBox.Text;
-            string unit = IngredientUnitTextBox.Text;
-            int quantity;
-            try
-            {
-                quantity = Int32.Parse(IngredientQuantityTextBox.Text);
-            }
-            catch
-            {
-                return;
-            }
-
-            IngredientData ingredient = new IngredientSystem().GetIngredientByRecipeID(RecipeIdInInt()).LastOrDefault();
-
-            if(ingredient == null)
-            {
-                InsertUpdateIngredient(0, RecipeIdInInt(), name, quantity, unit);
-            }
-            else
-            {
-
-                if (IngredientIDTextBox.Text == "")
-                {
-                    InsertUpdateIngredient(0, RecipeIdInInt(), name, quantity, unit);
-                }
-                else
-                {
-                    int newId = Int32.Parse(IngredientIDTextBox.Text);
-                    InsertUpdateIngredient(newId, RecipeIdInInt(), name, quantity, unit);
-                }
-                
-            }
-            
-
-            BindGridView();
-
-            // reload
-            postAddDiv.Visible = false;
-            IngredientIDTextBox.Text = "";
-            IngredientNameTextBox.Text = "";
-            IngredientQuantityTextBox.Text = "";
-            IngredientUnitTextBox.Text = "";
+            IngredientGridView.UseAccessibleHeader = true;
+            IngredientGridView.HeaderRow.TableSection = TableRowSection.TableHeader;
         }
 
         protected void InsertUpdateIngredient(int ingredientId, int recipeId, string name, int quantity, string unit)
@@ -131,11 +56,125 @@ namespace EateryDuwamish
             new IngredientSystem().InsertUpdateIngredient(newIngredient);
         }
 
+        protected void SubmitButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string name = IngredientNameTextBox.Text;
+                string unit = IngredientUnitTextBox.Text;
+                int quantity;
+                try
+                {
+                    quantity = Int32.Parse(IngredientQuantityTextBox.Text);
+                }
+                catch
+                {
+                    return;
+                }
+
+                IngredientData ingredient = new IngredientSystem().GetIngredientByRecipeID(RecipeIdInInt()).LastOrDefault();
+
+                if (ingredient == null)
+                {
+                    InsertUpdateIngredient(0, RecipeIdInInt(), name, quantity, unit);
+                }
+                else
+                {
+
+                    if (IngredientIDTextBox.Text == "")
+                    {
+                        InsertUpdateIngredient(0, RecipeIdInInt(), name, quantity, unit);
+                    }
+                    else
+                    {
+                        int newId = Int32.Parse(IngredientIDTextBox.Text);
+                        InsertUpdateIngredient(newId, RecipeIdInInt(), name, quantity, unit);
+                    }
+
+                }
+
+
+                BindGridView();
+
+                // reload
+                IngredientFormPanel.Visible = false;
+                IngredientIDTextBox.Text = "";
+                IngredientNameTextBox.Text = "";
+                IngredientQuantityTextBox.Text = "";
+                IngredientUnitTextBox.Text = "";
+
+
+                notifDish.Show("Data sukses disimpan", NotificationType.Success);
+            }
+            catch (Exception ex)
+            {
+                notifDish.Show($"ERROR SUBMIT DATA: {ex.Message}", NotificationType.Danger);
+            }
+        }
+
+        protected void AddButton_Click(object sender, EventArgs e)
+        {
+            IngredientFormPanel.Visible = true;
+            IngredientNameTextBox.Focus();
+
+            CreateHeader();
+        }
+
+        protected void DeleteButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                List<int> list = new List<int>();
+
+                for (int i = 0; i < IngredientGridView.Rows.Count; i++)
+                {
+                    var checkBox = IngredientGridView.Rows[i].FindControl("CheckBox") as CheckBox;
+                    if (checkBox.Checked)
+                    {
+                        list.Add(Int32.Parse(IngredientGridView.DataKeys[i]["IngredientID"].ToString()));
+                    }
+                }
+
+                if (list.Count == 0)
+                {
+                    notifDish.Show("NO DATA SELECTED", NotificationType.Danger);
+                    CreateHeader();
+                    return;
+                }
+
+                new IngredientSystem().DeleteIngredients(list);
+
+                BindGridView();
+
+                notifDish.Show("Data sukses dihapus", NotificationType.Success);
+            }
+            catch (Exception ex)
+            {
+                notifDish.Show($"ERROR DELETE DATA: {ex.Message}", NotificationType.Danger);
+            }
+        }
+
+        protected void EditButton_Click(object sender, EventArgs e)
+        {
+            IngredientFormPanel.Visible = true;
+            Button btn = (Button)sender;
+            GridViewRow row = (GridViewRow)btn.NamingContainer;
+
+            IngredientIDTextBox.Text = IngredientGridView.DataKeys[row.RowIndex]["IngredientID"].ToString();
+            IngredientNameTextBox.Text = row.Cells[2].Text;
+            IngredientQuantityTextBox.Text = row.Cells[3].Text;
+            IngredientUnitTextBox.Text = row.Cells[4].Text;
+
+            CreateHeader();
+        }
+
         protected void EditDescriptionButton_Click(object sender, EventArgs e)
         {
             DescriptionTextBox.Enabled = true;
             EditDescriptionButton.Visible = false;
             CancelDescriptionButton.Visible = true;
+
+            CreateHeader();
         }
 
         protected void CancelDescriptionButton_Click(object sender, EventArgs e)
@@ -146,6 +185,8 @@ namespace EateryDuwamish
             DescriptionTextBox.Enabled = false;
             EditDescriptionButton.Visible = true;
             CancelDescriptionButton.Visible = false;
+
+            CreateHeader();
         }
 
         protected void SaveDescriptionButton_Click(object sender, EventArgs e)
@@ -162,6 +203,8 @@ namespace EateryDuwamish
             DescriptionTextBox.Enabled = false;
             EditDescriptionButton.Visible = true;
             CancelDescriptionButton.Visible = false;
+
+            CreateHeader();
         }
     }
 }
