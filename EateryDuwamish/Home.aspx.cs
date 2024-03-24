@@ -51,6 +51,22 @@ namespace EateryDuwamish
             GridView.HeaderRow.TableSection = TableRowSection.TableHeader;
         }
 
+        protected void DeleteRecipe(int dishId)
+        {
+            List<int> recipeIdList = new RecipeSystem().GetRecipeByDishID(dishId).Select(x => x.RecipeID).ToList();
+            foreach(int recipeId in recipeIdList)
+            {
+                DeleteIngredient(recipeId);
+            }
+            new RecipeSystem().DeleteRecipes(recipeIdList);
+        }
+
+        protected void DeleteIngredient(int recipeId)
+        {
+            List<int> ingredientIdList = new IngredientSystem().GetIngredientByRecipeID(recipeId).Select(x => x.IngredientID).ToList();
+            new IngredientSystem().DeleteIngredients(ingredientIdList);
+        }
+
         #region CLICK EVENT
         protected void SubmitButton_Click(object sender, EventArgs e)
         {
@@ -141,6 +157,7 @@ namespace EateryDuwamish
                     var checkBox = GridView.Rows[i].FindControl("CheckBox") as CheckBox;
                     if (checkBox.Checked)
                     {
+                        DeleteRecipe(dishList[i].DishID);
                         list.Add(dishList[i].DishID);
                     }
                 }

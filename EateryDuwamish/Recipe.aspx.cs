@@ -35,6 +35,12 @@ namespace EateryDuwamish
             RecipeGridView.HeaderRow.TableSection = TableRowSection.TableHeader;
         }
 
+        protected void DeleteIngredient(int recipeId)
+        {
+            List<int> ingredientIdList = new IngredientSystem().GetIngredientByRecipeID(recipeId).Select(x => x.IngredientID).ToList();
+            new IngredientSystem().DeleteIngredients(ingredientIdList);
+        }
+
         protected void SubmitButton_Click(object sender, EventArgs e)
         {
             try
@@ -97,8 +103,9 @@ namespace EateryDuwamish
                     var checkBox = RecipeGridView.Rows[i].FindControl("CheckBox") as CheckBox;
                     if (checkBox.Checked)
                     {
-                        //GridView.DataKeys[i]["RecipeID"]
-                        list.Add(Int32.Parse(RecipeGridView.DataKeys[i]["RecipeID"].ToString()));
+                        int recipeId = Int32.Parse(RecipeGridView.DataKeys[i]["RecipeID"].ToString());
+                        DeleteIngredient(recipeId);
+                        list.Add(recipeId);
                     }
                 }
 
